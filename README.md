@@ -2,7 +2,7 @@
 Coast Pilot processing
 
 ## Goal
-Extract coordinates and related text information from each of the 14 chapters of the Coast Pilot XML documents, reformat each item, and load it into a repository.  Ultimately, https://www.deepzoom.com will display this information. 
+Extract coordinates and related text information from each of the 14 chapters of the Coast Pilot XML documents, reformat each item, and load it into a database.  Ultimately, https://www.deepzoom.com will display entries from this database. 
 
 This should be a multistep process which can be rerun on demand.  A general flow chart is:
 
@@ -34,9 +34,9 @@ Install Python:
 https://www.python.org/downloads/
 https://www.youtube.com/watch?v=RdD47NPku30  
 
-## Do you have a laptop?
+### Do you have a laptop?
 
-## Do you have a good email address?
+### Do you have a good email address?
 
 ## Contract
 Here's how I'd anticipate this would work.  You'll probably spend a few weeks getting things set up, learning to use VSCode, and learning enough Python to be useful.  You don't get paid for that part.  But once you start on the actual work, you get paid at each milestone.
@@ -53,3 +53,8 @@ Commented code must be checked into this repository at each milestone.
 
 4. Bonus.  Figure out how to make Mapbox search work with these entries.  $200
 
+### Overwhelmed already?
+
+Don't be.  There's no rush.  This work isn't critical path to anything else I'm working on, and I'm completely available to help out anytime.  You can pretty much create your own schedule for when this work gets done.
+
+I would start with installing VSCode and Python, and just fooling around with learning Python for a while.  There are a ton of good resources on the web and youtube.
