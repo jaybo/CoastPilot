@@ -12,14 +12,52 @@ import glob
 import numpy as np
 import re
 import shutil
+import csv
+
+substitutions = [
+    # stuff to nuke
+    ['<spacer.*?/spacer>', ' '],
+    ['<chartHeader.*?/chartHeader>', ' '],
+
+    # stuff to translate
+    ['<CP_GEO_LOC.*?>', ''],
+    ['</CP_GEO_LOC.*?>', ''],
+    ['<CP_INDEX.*?>', '<span class="cp_index">'],
+    ['</CP_INDEX.*?>', '</span>'],
+    ['<CP_B.*?>', '<strong>'],
+    ['</CP_B.*?>', '</strong>'],
+    ['<CP_ITALIC.*?>', '<i>'],
+    ['</CP_ITALIC.*?>', '</i>'],
+    ['<cfr.*?>', ''],
+    ['</cfr.*?>', ''],
+    ['<table.*?>', ''],
+    ['</table.*?>', ''],
+    ['<image.*?>', ''],
+    ['</image.*?>', ''],
+
+    ['<paragraphHeader.*?>', '<div class="cp_paragraphHeader">'],
+    ['</paragraphHeader.*?>', '</div>'],
+    ['<paragraph.*?>', '<p class="cp_paragraph">'],
+    ['</paragraph.*?>', '</p>'],
+    ['<paraText.*?>', '<div class="cp_text">'],
+    ['</paraText.*?>', '</div>'],
+    ['<paraIndex.*?>', '<span class="cp_paraindex">'],
+    ['</paraIndex.*?>', '</span>'],
+]
 
 ##### All of the functions that will be needed for the script
 # Return just the text portion of the paragraph
 def plain_text_paragraph(paragraph):
-    s1 = re.sub('<.*?>', '', paragraph)
-    s2 = re.sub("\t", '', s1)
-    s_out = re.sub("\(.*?\)", '', s2)
-    return(s_out)
+    for sub in substitutions:
+        paragraph = re.sub(sub[0], sub[1], paragraph, flags=re.IGNORECASE)
+    print(paragraph)
+    return paragraph
+
+
+    # s1 = re.sub('<.*?>', '', paragraph)
+    # s2 = re.sub("\t", '', s1)
+    # s_out = re.sub(r"\(.*?\)", '', s2)
+    # return(s_out)
 
 # Return the Source IDs present in paragraphs
 def return_geo_ids(paragraph):
@@ -54,7 +92,8 @@ def test_name(x):
 # Make a list of files (There are 10 coast pilot publications)
 url_list = list()
 
-for n in range(1,11):
+# for n in range(1,11):
+for n in range(10,11):
     url_list.append('https://nauticalcharts.noaa.gov/publications/coast-pilot/files/cp' + str(n) + 
                     '/CPB' + str(n) + '_WEB.zip')
 
@@ -62,6 +101,8 @@ for n in range(1,11):
 txt_master_df = []
 loc_master_df = []
 anchorage_master_df = []
+
+redownload = False
 
 ##########################################################################################
 # Big loop:
@@ -79,25 +120,29 @@ for url in url_list: # Loop through each URL
     if(os.path.exists(output_folder) == False): # Don't make it if it doesn't already exist
         os.mkdir(output_folder)
     
-    # Download the file
-    #print("Requesting URL")
-    rq = requests.get(url, allow_redirects=True)
-    
-    #print("Downloading URL")
-    open(output_zip_path, 'wb').write(rq.content)
-    
-    # Unzip  the file
-    #print("Unzipping")
-    with ZipFile(output_zip_path, 'r') as zipObj:
-        zipObj.extractall(output_folder)
-    
-    # To save space, delete the zipped file
-    if os.path.exists(output_zip_path):
-        os.remove(output_zip_path)
+    if redownload:
+        # Download the file
+        #print("Requesting URL")
+        rq = requests.get(url, allow_redirects=True)
+        
+        #print("Downloading URL")
+        open(output_zip_path, 'wb').write(rq.content)
+        
+        # Unzip  the file
+        #print("Unzipping")
+        with ZipFile(output_zip_path, 'r') as zipObj:
+            zipObj.extractall(output_folder)
+        
+        # To save space, delete the zipped file
+        if os.path.exists(output_zip_path):
+            os.remove(output_zip_path)
     
     # Get the names of all chapter files within this folder
     f_list = sorted(glob.glob(os.path.join(output_folder, "*_C*.xml")))
-    
+
+
+
+
     #print("Parsing XML")
     # MAIN LOOP:
     # Loop through each chapter and pull the locations and text
@@ -183,13 +228,14 @@ for url in url_list: # Loop through each URL
             if anchr_df_out.shape[0] > 0: # If it has at least one row
                 anchorage_master_df.append(anchr_df_out)
     
-    # When completed, remove the unzipped folder
-    if(os.path.exists(output_folder) == True): 
-        shutil.rmtree(output_folder)
-        
-    # On the last one, remove the 'zip' folder
-    if url_list.index(url) == (len(url_list) - 1):
-        shutil.rmtree('zip')
+    if redownload:
+        # When completed, remove the unzipped folder
+        if(os.path.exists(output_folder) == True): 
+            shutil.rmtree(output_folder)
+            
+        # On the last one, remove the 'zip' folder
+        if url_list.index(url) == (len(url_list) - 1):
+            shutil.rmtree('zip')
 
 
 ##########################################################################################
@@ -243,16 +289,28 @@ df_all = df_all.fillna(" ")
 
 ##### Separate the tables into a mapbox output and a deepzoom output
 # Mapbox output is just the lat/long and source ID
+
+
+
 mapbox_output = df_all[['source_id', 'lat_dec', 'long_dec']]
-mapbox_output.to_csv('_mapbox_output.csv', index=False)
+mapbox_output.to_csv('_mapbox_output.csv',     
+    quoting=csv.QUOTE_NONNUMERIC,
+    escapechar="\\",
+    doublequote=False, index=False)
 
 # DeepZoom output has all other information, including the text paragraph
 dz_output = df_all[['source_id', 'feature_name', 'feature_class', 'lat_dec', 'long_dec', 
                     'elev_in_m', 'elev_in_ft', 'paragraph']]
-dz_output.to_csv('_deepzoom_database_output.csv', index=False)
+dz_output.to_csv('_deepzoom_database_output.csv', 
+    quoting=csv.QUOTE_NONNUMERIC,
+    escapechar="\\",
+    doublequote=False, index=False)
 
 ##########################################################################################
 # Combine all of the df's in the anchorage master
 anchorage_master_df = pd.concat(anchorage_master_df, ignore_index=True)
-anchorage_master_df.to_csv("_anchorages.csv", index=False)
+anchorage_master_df.to_csv("_anchorages.csv",    
+    quoting=csv.QUOTE_NONNUMERIC,
+    escapechar="\\",
+    doublequote=False, index=False)
 
