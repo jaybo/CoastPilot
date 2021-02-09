@@ -24,24 +24,20 @@ from requests.adapters import HTTPAdapter
 auth = requests.auth.HTTPBasicAuth('barney', 'snook')
 url = "https://localhost:44346/api/v1/data/markersPublic"
 #url = "https://deepzoom-test.azurewebsites.net/api/v1/data/markersPublic"
-cer = "D:/devGit/CoastPilot/client1.crt"
-csr = "D:/devGit/CoastPilot/client1.csr"
-key = "D:/devGit/CoastPilot/client1.key"
 
 
-
-class SSLContextAdapter(HTTPAdapter):
-    def init_poolmanager(self, *args, **kwargs):
-        context = ssl.create_default_context()
-        kwargs['ssl_context'] = context
-        context.load_default_certs() # this loads the OS defaults on Windows
-        return super(SSLContextAdapter, self).init_poolmanager(*args, **kwargs)
+# class SSLContextAdapter(HTTPAdapter):
+#     def init_poolmanager(self, *args, **kwargs):
+#         context = ssl.create_default_context()
+#         kwargs['ssl_context'] = context
+#         context.load_default_certs() # this loads the OS defaults on Windows
+#         return super(SSLContextAdapter, self).init_poolmanager(*args, **kwargs)
 
 session = requests.Session()
 # adapter = SSLContextAdapter()
 # session.mount(url, adapter)
 
-print(requests.certs.where())
+# print(requests.certs.where())
 
 print(os.getcwd())
 
@@ -53,13 +49,11 @@ df.columns
 
 features = ["Airport", "Arch", "Bar", "Bay", "Beach", "Bend", "Bridge", "Canal", "Cape", "Channel", "Cliff", "Crater", "Dam", "Flat", "Gap", "Gut", "Harbor", "Island", "Lake", "Lava", "Park", "Pillar",  "Populated Place", "Reservoir",  "River", "Stream", "Valley"]
 
-home = df[(df["lat_dec"] > 47) & (df["lat_dec"] < 48) & (df["long_dec"] < -122) & (df["long_dec"] > -123) & (df["feature_class"].isin(features)) ]
+# home = df[(df["lat_dec"] > 47) & (df["lat_dec"] < 48) & (df["long_dec"] < -122) & (df["long_dec"] > -123) & (df["feature_class"].isin(features)) ]
+# print(home.head())
+# print(len(home.index))
 
-print(home.head())
-
-print(len(home.index))
-
-
+failures = 0
 
 def upload(row):
     id = "GNIS" + str(row["source_id"])
@@ -95,18 +89,22 @@ def upload(row):
     # response = session.post(url, data=payload, headers=header, auth=auth, cert=(cer, key))
     # response = requests.get("https://localhost:44346", verify=False)
 
-    for attempt in range(10):
+    attempts = 10
+    for attempt in range(attempts):
         response = session.post(url, data=json.dumps(payload), headers=header, auth=auth, verify=False)
         print (response.status_code, payload)
         if (response.status_code == 200):
             break
         print ("attempt: ", attempt)
+        if (attempt == attempts - 1):
+            failures += 1
 
 count = 0
-for index, row in home.iterrows():
+for index, row in df.iterrows():
     #print(row['paragraph'])
     upload(row)
     count += 1
     # if count > 10:
     #     break
 
+print ("count: ", count, "failures: ", failures)
