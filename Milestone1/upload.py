@@ -1,7 +1,3 @@
-# To add a new cell, type '# %%'
-# To add a new markdown cell, type '# %% [markdown]'
-
-# %%
 #!/usr/bin/env python
 # coding: utf-8
 
@@ -25,7 +21,7 @@ import csv
 import ssl
 from requests.adapters import HTTPAdapter
 
-auth = requests.auth.HTTPBasicAuth('arnie', 'snarf')
+auth = requests.auth.HTTPBasicAuth('barney', 'snook')
 url = "https://localhost:44346/api/v1/data/markersPublic"
 #url = "https://deepzoom-test.azurewebsites.net/api/v1/data/markersPublic"
 cer = "D:/devGit/CoastPilot/client1.crt"
@@ -55,9 +51,9 @@ df = pd.read_csv(
 
 df.columns
 
-features = ["Bay", "Canal", "Cape", "Channel", "River", "Stream"]
+features = ["Airport", "Arch", "Bar", "Bay", "Beach", "Bend", "Bridge", "Canal", "Cape", "Channel", "Cliff", "Crater", "Dam", "Flat", "Gap", "Gut", "Harbor", "Island", "Lake", "Lava", "Park", "Pillar",  "Populated Place", "Reservoir",  "River", "Stream", "Valley"]
 
-home = df[(df["lat_dec"] > 46) & (df["lat_dec"] < 48) & (df["long_dec"] < -121) & (df["long_dec"] > -124) & (df["feature_class"].isin(features)) ]
+home = df[(df["lat_dec"] > 47) & (df["lat_dec"] < 48) & (df["long_dec"] < -122) & (df["long_dec"] > -123) & (df["feature_class"].isin(features)) ]
 
 print(home.head())
 
@@ -68,14 +64,16 @@ print(len(home.index))
 def upload(row):
     id = "GNIS" + str(row["source_id"])
     coordinates = [row["long_dec"], row["lat_dec"]]
+    doc = row["paragraph"]
+    is_anchorage = doc.find("nchor") > 0
+
     properties = {
         "isMarker": True,
         "access": "public",
         "name": row["feature_name"],
-        "icon": "coastpilot",
+        "icon": "anchorage" if is_anchorage else "coastpilot" ,
         "id": id
     }
-    doc = row["paragraph"]
 
     marker = {
         "id": id,
@@ -95,15 +93,20 @@ def upload(row):
     header = {"Content-type": "application/json"} 
 
     # response = session.post(url, data=payload, headers=header, auth=auth, cert=(cer, key))
-    response = requests.get("https://localhost:44346", verify=False)
+    # response = requests.get("https://localhost:44346", verify=False)
 
-    response = requests.post(url, body=payload, headers=header, auth=auth, verify=False)
-    print (response.status_code, payload)
-    # response_json = response_decoded_json.json()
+    for attempt in range(10):
+        response = session.post(url, data=json.dumps(payload), headers=header, auth=auth, verify=False)
+        print (response.status_code, payload)
+        if (response.status_code == 200):
+            break
+        print ("attempt: ", attempt)
 
+count = 0
 for index, row in home.iterrows():
     #print(row['paragraph'])
     upload(row)
-    if index > 3:
-        break
+    count += 1
+    # if count > 10:
+    #     break
 

@@ -22,8 +22,8 @@ substitutions = [
     # stuff to translate
     ['<CP_GEO_LOC.*?>', ''],
     ['</CP_GEO_LOC.*?>', ''],
-    ['<CP_INDEX.*?>', '<span class="cp_index">'],
-    ['</CP_INDEX.*?>', '</span>'],
+    ['<CP_INDEX.*?>', '<strong>'],
+    ['</CP_INDEX.*?>', '</strong>'],
     ['<CP_B.*?>', '<strong>'],
     ['</CP_B.*?>', '</strong>'],
     ['<CP_ITALIC.*?>', '<i>'],
@@ -41,23 +41,28 @@ substitutions = [
     ['</paragraph.*?>', '</p>'],
     ['<paraText.*?>', '<div class="cp_text">'],
     ['</paraText.*?>', '</div>'],
-    ['<paraIndex.*?>', '<span class="cp_paraindex">'],
-    ['</paraIndex.*?>', '</span>'],
+    ['<paraIndex.*?>', '<span class="cp_paraindex">']
 ]
 
 ##### All of the functions that will be needed for the script
-# Return just the text portion of the paragraph
-def plain_text_paragraph(paragraph):
+
+# Reformat the paragraph to HTML and substitute in source info
+def reformat_paragraph(paragraph, source_info):
     for sub in substitutions:
         paragraph = re.sub(sub[0], sub[1], paragraph, flags=re.IGNORECASE)
+    # special case the closing /paraIndex, and append all of the source_info
+    # source_info = {
+    #     "chapter_title" : chapter_title,
+    #     "book_title" : booktitle,
+    #     "book_year" : bookyear,
+    #     "book_edition" : bookedition,
+    #     "book_chapter_number" : bookchapternum,
+    # }
+    close_paraIndex = f'</span> <strong> {source_info["book_title"]}</strong>, <span> chapter:{source_info["book_chapter_number"]} </span> </br> <strong > {source_info["chapter_title"]} </strong> <span> {source_info["book_year"]} </span>'
+    paragraph = re.sub('</paraIndex.*?>', close_paraIndex, paragraph, flags = re.IGNORECASE)
     print(paragraph)
     return paragraph
 
-
-    # s1 = re.sub('<.*?>', '', paragraph)
-    # s2 = re.sub("\t", '', s1)
-    # s_out = re.sub(r"\(.*?\)", '', s2)
-    # return(s_out)
 
 # Return the Source IDs present in paragraphs
 def return_geo_ids(paragraph):
@@ -70,9 +75,9 @@ def return_geo_ids(paragraph):
     return(output_ids)
 
 # Make a dataframe from each entry
-def entry_to_df(paragraph):
+def entry_to_df(paragraph, source_info):
     sourceid_df = pd.DataFrame(return_geo_ids(paragraph), columns=['source_id'])
-    sourceid_df['paragraph'] = plain_text_paragraph(paragraph)
+    sourceid_df['paragraph'] = reformat_paragraph(paragraph, source_info)
     return(sourceid_df)
 
 # See if the string is a digit or not
@@ -92,16 +97,15 @@ def test_name(x):
 # Make a list of files (There are 10 coast pilot publications)
 url_list = list()
 
-# for n in range(1,11):
-for n in range(10,11):
-    url_list.append('https://nauticalcharts.noaa.gov/publications/coast-pilot/files/cp' + str(n) + 
-                    '/CPB' + str(n) + '_WEB.zip')
-
 # Make blank data frames to export the ones from the loop
 txt_master_df = []
 loc_master_df = []
 anchorage_master_df = []
 
+for n in range(1,11):
+# for n in range(10,11):
+    url_list.append('https://nauticalcharts.noaa.gov/publications/coast-pilot/files/cp' + str(n) + 
+                    '/CPB' + str(n) + '_WEB.zip')
 redownload = False
 
 ##########################################################################################
@@ -139,8 +143,6 @@ for url in url_list: # Loop through each URL
     
     # Get the names of all chapter files within this folder
     f_list = sorted(glob.glob(os.path.join(output_folder, "*_C*.xml")))
-
-
 
 
     #print("Parsing XML")
@@ -186,11 +188,18 @@ for url in url_list: # Loop through each URL
         output_df["book_year"] = bookyear
         output_df["book_edition"] = bookedition
         output_df["book_chapter_number"] = bookchapternum
+
+        source_info = {
+            "chapter_title" : chapter_title,
+            "book_title" : booktitle,
+            "book_year" : bookyear,
+            "book_edition" : bookedition,
+            "book_chapter_number" : bookchapternum,
+        }
         
         # Append the df to the master
-        if 'output_df' in locals(): # If it exists
-            if output_df.shape[0] > 0: # If it has at least one row
-                loc_master_df.append(output_df)
+        if output_df.shape[0] > 0: # If it has at least one row
+            loc_master_df.append(output_df)
         
         ##### Step 2 -
         # Return the text information
@@ -201,33 +210,14 @@ for url in url_list: # Loop through each URL
         # Make a blank df to put the output into
         source_text_df = pd.DataFrame(columns=['source_id', 'paragraph'])
         for entry in all_text:
-            entry_df = entry_to_df(entry)
+            entry_df = entry_to_df(entry, source_info)
             if(entry_df.shape[0] > 0):
                 source_text_df = source_text_df.append(entry_df, ignore_index=True)
 
         # Append the df to the master
-        if 'source_text_df' in locals(): # If it exists
-            if source_text_df.shape[0] > 0: # If it has at least one row
-                txt_master_df.append(source_text_df)
+        if source_text_df.shape[0] > 0: # If it has at least one row
+            txt_master_df.append(source_text_df)
         
-        ##### Step 3 -
-        # Only return paragraphs with "anchorage" in them
-        anchr_out = []
-        for para in all_text:
-            anchr = re.findall('nchorage', para.lower())
-            if(len(anchr)) > 0:
-                pt = plain_text_paragraph(para)
-                if(len(pt)) > 11:
-                    anchr_out.append(pt)
-        anchr_df_out = pd.DataFrame({'text': anchr_out})
-        anchr_df_out['book_num'] = booktitlenum
-        anchr_df_out['chapter_num'] = bookchapternum
-        
-        # Append the df to the master
-        if 'anchr_df_out' in locals(): # If it exists
-            if anchr_df_out.shape[0] > 0: # If it has at least one row
-                anchorage_master_df.append(anchr_df_out)
-    
     if redownload:
         # When completed, remove the unzipped folder
         if(os.path.exists(output_folder) == True): 
@@ -300,17 +290,12 @@ mapbox_output.to_csv('_mapbox_output.csv',
 
 # DeepZoom output has all other information, including the text paragraph
 dz_output = df_all[['source_id', 'feature_name', 'feature_class', 'lat_dec', 'long_dec', 
-                    'elev_in_m', 'elev_in_ft', 'paragraph']]
+                    'elev_in_m', 'elev_in_ft', 
+                    'book_title', 'book_year', 'book_edition', 'book_chapter_number', 'chapter_title', 'paragraph']]
+
 dz_output.to_csv('_deepzoom_database_output.csv', 
     quoting=csv.QUOTE_NONNUMERIC,
     escapechar="\\",
     doublequote=False, index=False)
 
-##########################################################################################
-# Combine all of the df's in the anchorage master
-anchorage_master_df = pd.concat(anchorage_master_df, ignore_index=True)
-anchorage_master_df.to_csv("_anchorages.csv",    
-    quoting=csv.QUOTE_NONNUMERIC,
-    escapechar="\\",
-    doublequote=False, index=False)
 
