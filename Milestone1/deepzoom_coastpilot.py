@@ -106,7 +106,8 @@ for n in range(1,11):
 # for n in range(10,11):
     url_list.append('https://nauticalcharts.noaa.gov/publications/coast-pilot/files/cp' + str(n) + 
                     '/CPB' + str(n) + '_WEB.zip')
-redownload = False
+redownload = True
+deleteIntermediateFiles = False
 
 ##########################################################################################
 # Big loop:
@@ -218,7 +219,7 @@ for url in url_list: # Loop through each URL
         if source_text_df.shape[0] > 0: # If it has at least one row
             txt_master_df.append(source_text_df)
         
-    if redownload:
+    if deleteIntermediateFiles:
         # When completed, remove the unzipped folder
         if(os.path.exists(output_folder) == True): 
             shutil.rmtree(output_folder)

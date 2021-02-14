@@ -21,7 +21,7 @@ import csv
 import ssl
 from requests.adapters import HTTPAdapter
 
-auth = requests.auth.HTTPBasicAuth('barney', 'snook')
+auth = requests.auth.HTTPBasicAuth('averil', 'snort')
 url = "https://localhost:44346/api/v1/data/markersPublic"
 #url = "https://deepzoom-test.azurewebsites.net/api/v1/data/markersPublic"
 
@@ -78,10 +78,13 @@ def upload(row):
         },
         "properties": properties
     }
+
+    # TODO!! MAKE doc NULL AFTER INITIAL LOAD ELSE WIPE OUT EXISTING CONTENT!!!
     payload = {
         "id": id,
         "point": marker,
-        "doc": doc,
+        "doc": "<p> </p>",      
+        "coastPilot": doc
     }
 
     header = {"Content-type": "application/json"} 
@@ -91,12 +94,16 @@ def upload(row):
 
     attempts = 10
     for attempt in range(attempts):
-        response = session.post(url, data=json.dumps(payload), headers=header, auth=auth, verify=False)
-        print (response.status_code, payload)
-        if (response.status_code == 200):
-            break
-        print ("attempt: ", attempt)
-        if (attempt == attempts - 1):
+        try:
+            response = session.post(url, data=json.dumps(payload), headers=header, auth=auth, verify=False)
+            print (response.status_code, payload)
+            if (response.status_code == 200):
+                break
+            print ("attempt: ", attempt)
+            if (attempt == attempts - 1):
+                failures += 1
+        except:
+            print ("error")
             failures += 1
 
 count = 0
