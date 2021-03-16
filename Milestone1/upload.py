@@ -22,7 +22,7 @@ import ssl
 from requests.adapters import HTTPAdapter
 
 auth = requests.auth.HTTPBasicAuth('averil', 'snort')
-url = "https://localhost:44346/api/v1/data/markersPublic"
+url = "https://localhost:44346/api/v1/markers/markersPublic"
 #url = "https://deepzoom-test.azurewebsites.net/api/v1/data/markersPublic"
 
 

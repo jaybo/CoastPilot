@@ -36,7 +36,7 @@ print(home.head())
 print(len(home.index))
 
 auth = requests.auth.HTTPBasicAuth('arnie', 'snarf')
-url = "https://localhost:44346/api/v1/data/markersPublic"
+url = "https://localhost:44346/api/v1/markers/markersPublic"
 #url = "https://deepzoom-test.azurewebsites.net/api/v1/data/markersPublic"
 cer = "D:/devGit/CoastPilot/mypem.pem"
 key = "D:/devGit/CoastPilot/mykey.key"

@@ -1,0 +1,20 @@
+<paragraph>
+    <paraindex>(108)</paraindex>
+    <paratext>
+        <spacer>\t\t</spacer>
+        <cp_index text="akoakoa point 19327">
+            <cp_geo_loc 
+            county_name="hawaii" county_numeric="1" elev_in_m="28" feature_class="cape" feature_name="akoakoa point" lat_dec="20.2192" long_dec="-155.7314" map_name="honokane" source="gnis" source_date="3/12/2007" source_id="358495" state_alpha="hi" state_numeric="15">
+            akoakoa point
+            </cp_geo_loc>
+        </cp_index>
+        is 2.8 miles southeast of kauhola point. the country southeast of akoakoa point rises gradually to the 
+        <cp_geo_loc 
+            county_name="1" county_numeric="hawaii" elev_in_m="1651" feature_class="range" feature_name="kohala mountains" lat_dec="20.0855" long_dec="-155.7170" map_name="kamuela" source="gnis" source_date="2/14/2013" source_id="361346" state_alpha="hi" state_numeric="15">
+            <cp_index text="kohala mountains 19320">
+                kohala mountains
+            </cp_index>
+        </cp_geo_loc>
+        , which are heavily wooded to their summits.
+    </paratext>
+</paragraph>
